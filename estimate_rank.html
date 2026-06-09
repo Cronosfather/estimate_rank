@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>예상 등수 계산기</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d8dee9;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --ok-bg: #eefaf4;
+      --ok-line: #9ad3b4;
+      --shadow: 0 14px 35px rgba(31, 41, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      width: min(980px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+
+    header {
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 12px;
+      color: var(--text);
+      font-size: 15px;
+      background: #fff;
+    }
+
+    input:focus {
+      outline: 3px solid rgba(37, 99, 235, 0.16);
+      border-color: var(--primary);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .subject-row {
+      display: grid;
+      grid-template-columns: minmax(130px, 1fr) 100px 90px 42px;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .icon-button,
+    button {
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .icon-button {
+      width: 42px;
+      height: 42px;
+      color: #fff;
+      background: var(--danger);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .primary,
+    .secondary {
+      height: 42px;
+      padding: 0 16px;
+    }
+
+    .primary {
+      color: #fff;
+      background: var(--primary);
+    }
+
+    .primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: #e8edf5;
+    }
+
+    .message {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .message.error {
+      display: block;
+      color: #991b1b;
+      background: var(--danger-bg);
+      border: 1px solid #fecaca;
+    }
+
+    .result-empty {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .result-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric span {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .notice {
+      margin-top: 14px;
+      border: 1px solid var(--ok-line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: var(--ok-bg);
+      color: #24563b;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .summary {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .summary ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 800px) {
+      main {
+        width: min(100% - 22px, 980px);
+        margin: 20px auto;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .subject-row {
+        grid-template-columns: 1fr 1fr 42px;
+      }
+
+      .subject-row .name-field {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>예상 등수 계산기</h1>
+      <p class="subtitle">전체 학생 수와 과목별 등수, 시수를 입력하면 시수 가중 평균으로 예상 등수와 상위 백분율을 계산합니다.</p>
+    </header>
+
+    <div class="layout">
+      <section aria-labelledby="input-title">
+        <h2 id="input-title">입력</h2>
+
+        <div class="field">
+          <label for="totalStudents">전체 학생 수</label>
+          <input id="totalStudents" type="number" min="1" step="1" placeholder="예: 240">
+        </div>
+
+        <div id="subjects"></div>
+
+        <div class="actions">
+          <button class="secondary" type="button" id="addSubject">과목 추가</button>
+          <button class="primary" type="button" id="calculate">계산하기</button>
+          <button class="secondary" type="button" id="reset">초기화</button>
+        </div>
+
+        <div id="message" class="message" role="alert"></div>
+      </section>
+
+      <section aria-labelledby="result-title">
+        <h2 id="result-title">결과</h2>
+        <div id="result" class="result-empty">값을 입력하고 계산하면 결과가 여기에 표시됩니다.</div>
+      </section>
+    </div>
+  </main>
+
+  <template id="subjectTemplate">
+    <div class="subject-row">
+      <div class="name-field">
+        <label>과목명</label>
+        <input class="subject-name" type="text" placeholder="예: 국어">
+      </div>
+      <div>
+        <label>등수</label>
+        <input class="subject-rank" type="number" min="1" step="1" placeholder="38">
+      </div>
+      <div>
+        <label>시수</label>
+        <input class="subject-credit" type="number" min="1" step="1" placeholder="3">
+      </div>
+      <button class="icon-button remove-subject" type="button" aria-label="과목 삭제">×</button>
+    </div>
+  </template>
+
+  <script>
+    const totalStudentsInput = document.querySelector("#totalStudents");
+    const subjectsEl = document.querySelector("#subjects");
+    const messageEl = document.querySelector("#message");
+    const resultEl = document.querySelector("#result");
+    const template = document.querySelector("#subjectTemplate");
+
+    function addSubjectRow(values = {}) {
+      const row = template.content.firstElementChild.cloneNode(true);
+      row.querySelector(".subject-name").value = values.name || "";
+      row.querySelector(".subject-rank").value = values.rank || "";
+      row.querySelector(".subject-credit").value = values.credit || "";
+      row.querySelector(".remove-subject").addEventListener("click", () => {
+        if (subjectsEl.children.length > 1) {
+          row.remove();
+        } else {
+          row.querySelectorAll("input").forEach((input) => input.value = "");
+        }
+      });
+      subjectsEl.appendChild(row);
+    }
+
+    function showError(text) {
+      messageEl.textContent = text;
+      messageEl.className = "message error";
+    }
+
+    function clearError() {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
+
+    function readPositiveInteger(input, label) {
+      const value = Number(input.value);
+      if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`${label}은 1 이상의 정수여야 합니다.`);
+      }
+      return value;
+    }
+
+    function collectSubjects(totalStudents) {
+      const subjects = [];
+      const names = new Set();
+
+      subjectsEl.querySelectorAll(".subject-row").forEach((row, index) => {
+        const name = row.querySelector(".subject-name").value.trim();
+        const rankInput = row.querySelector(".subject-rank");
+        const creditInput = row.querySelector(".subject-credit");
+
+        if (!name && !rankInput.value && !creditInput.value) {
+          return;
+        }
+
+        if (!name) {
+          throw new Error(`${index + 1}번째 과목명을 입력해야 합니다.`);
+        }
+
+        if (names.has(name)) {
+          throw new Error(`'${name}' 과목이 중복되었습니다.`);
+        }
+
+        const rank = readPositiveInteger(rankInput, `${name} 등수`);
+        const credit = readPositiveInteger(creditInput, `${name} 시수`);
+
+        if (rank > totalStudents) {
+          throw new Error(`${name} 등수는 전체 학생 수보다 클 수 없습니다.`);
+        }
+
+        names.add(name);
+        subjects.push({ name, rank, credit });
+      });
+
+      if (subjects.length === 0) {
+        throw new Error("최소 1개 이상의 과목을 입력해야 합니다.");
+      }
+
+      return subjects;
+    }
+
+    function calculate() {
+      clearError();
+
+      try {
+        const totalStudents = readPositiveInteger(totalStudentsInput, "전체 학생 수");
+        const subjects = collectSubjects(totalStudents);
+
+        const weightedRankSum = subjects.reduce((sum, subject) => {
+          return sum + subject.rank * subject.credit;
+        }, 0);
+        const creditSum = subjects.reduce((sum, subject) => sum + subject.credit, 0);
+        const estimatedRank = weightedRankSum / creditSum;
+        const topPercent = estimatedRank / totalStudents * 100;
+
+        const varianceSum = subjects.reduce((sum, subject) => {
+          return sum + ((subject.rank - estimatedRank) ** 2) * subject.credit;
+        }, 0);
+        const variance = varianceSum / creditSum;
+        const standardDeviation = Math.sqrt(variance);
+
+        let errorMargin = standardDeviation * 0.25;
+        errorMargin = Math.min(Math.max(errorMargin, 1.5), 3.5);
+
+        const lowerRank = Math.max(1, estimatedRank - errorMargin);
+        const upperRank = Math.min(totalStudents, estimatedRank + errorMargin);
+        const lowerPercent = lowerRank / totalStudents * 100;
+        const upperPercent = upperRank / totalStudents * 100;
+
+        const subjectItems = subjects.map((subject) => {
+          return `<li>${escapeHtml(subject.name)} - ${subject.rank}등, ${subject.credit}시수</li>`;
+        }).join("");
+
+        resultEl.className = "";
+        resultEl.innerHTML = `
+          <div class="result-grid">
+            <div class="metric">
+              <strong>추정 등수</strong>
+              <span>약 ${estimatedRank.toFixed(1)}등 / ${totalStudents}명</span>
+            </div>
+            <div class="metric">
+              <strong>상위 백분율</strong>
+              <span>상위 ${topPercent.toFixed(1)}%</span>
+            </div>
+            <div class="metric">
+              <strong>오차 범위</strong>
+              <span>${lowerRank.toFixed(0)}등 ~ ${upperRank.toFixed(0)}등</span>
+            </div>
+            <div class="metric">
+              <strong>백분율 오차 범위</strong>
+              <span>상위 ${lowerPercent.toFixed(1)}% ~ ${upperPercent.toFixed(1)}%</span>
+            </div>
+          </div>
+          <div class="summary">
+            <h2>입력 과목 요약</h2>
+            <ul>${subjectItems}</ul>
+          </div>
+          <div class="notice">
+            이 결과는 과목별 등수와 시수를 이용한 추정값입니다. 실제 전체 석차는 모든 학생의 과목별 점수 자료가 있어야 정확하게 계산할 수 있습니다.
+          </div>
+        `;
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    document.querySelector("#addSubject").addEventListener("click", () => addSubjectRow());
+    document.querySelector("#calculate").addEventListener("click", calculate);
+    document.querySelector("#reset").addEventListener("click", () => {
+      totalStudentsInput.value = "";
+      subjectsEl.innerHTML = "";
+      addSubjectRow();
+      clearError();
+      resultEl.className = "result-empty";
+      resultEl.textContent = "값을 입력하고 계산하면 결과가 여기에 표시됩니다.";
+    });
+
+    addSubjectRow({ name: "국어", rank: 38, credit: 3 });
+  </script>
+</body>
+</html>
